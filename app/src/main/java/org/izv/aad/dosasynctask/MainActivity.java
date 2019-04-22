@@ -12,7 +12,7 @@ import android.widget.TextView;
 public class MainActivity extends AppCompatActivity {
 
     //https://stackoverflow.com/questions/4068984/running-multiple-asynctasks-at-the-same-time-not-possible
-    
+
     public static final String TAG = MainActivity.class.getSimpleName();
     private static final int TOPE_SUPERIOR = 20, TOPE_INFERIOR = 0;
 
@@ -36,24 +36,30 @@ public class MainActivity extends AppCompatActivity {
         this.btDo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                TaskCuentaAdelante tarea = new TaskCuentaAdelante(tvTexto1);
+                TaskCuentaAdelante tarea1 = new TaskCuentaAdelante(tvTexto1);
                 TaskCuentaAtras tarea2 = new TaskCuentaAtras(tvTexto2);
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                    tarea.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                    tarea2.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    tarea1.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    tarea2.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (short)150);
                 } else {
-                    tarea.execute();
+                    tarea1.execute();
                     tarea2.execute();
                 }
+                /*try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                }
+                tarea1.cancel(false);
+                tarea2.cancel(false);*/
             }
         });
     }
 
-    private class TaskCuentaAdelante extends AsyncTask<Void, Integer, Void> {
+    private static class TaskCuentaAdelante extends AsyncTask<Void, Integer, Void> {
 
         private TextView tv;
 
-        public TaskCuentaAdelante(TextView tv) {
+        TaskCuentaAdelante(TextView tv) {
             this.tv = tv;
         }
 
@@ -71,10 +77,13 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException ex) {
+                    break;
+                }
+                if(isCancelled()) {
+                    break;
                 }
                 publishProgress(cuentaAdelante);
             }
-            publishProgress(new Integer[]{});
             return null;
         }
 
@@ -88,26 +97,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-        }
-
-        @Override
         protected void onCancelled() {
             super.onCancelled();
+            tv.append("cancelado\n");
         }
 
-        @Override
-        protected void onCancelled(Void aVoid) {
-            super.onCancelled(aVoid);
-        }
     }
 
-    private class TaskCuentaAtras extends AsyncTask<Void, Integer, Void> {
+    private static class TaskCuentaAtras extends AsyncTask<Short, Integer, String> {
 
         private TextView tv;
 
-        public TaskCuentaAtras(TextView tv) {
+        TaskCuentaAtras(TextView tv) {
             this.tv = tv;
         }
 
@@ -118,17 +119,32 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected String doInBackground(Short... voids) {
             int cuentaAtras;
+            long initial = System.nanoTime();
+            short time = 300;
+            if(voids.length > 0) {
+                time = voids[0];
+            }
             Log.v(TAG, Thread.currentThread().getName());
             for (cuentaAtras = TOPE_SUPERIOR; cuentaAtras >= TOPE_INFERIOR; cuentaAtras--) {
                 try {
-                    Thread.sleep(300);
+                    Thread.sleep(time);
                 } catch (InterruptedException ex) {
+                    break;
+                }
+                if(isCancelled()) {
+                    return "cancelado, tiempo: "+ (System.nanoTime() - initial);
                 }
                 publishProgress(cuentaAtras);
             }
-            return null;
+            return "Tiempo: " + (System.nanoTime() - initial);
+        }
+
+        @Override
+        protected void onCancelled(String s) {
+            super.onCancelled(s);
+            tv.append(s + "\n");
         }
 
         @Override
@@ -141,18 +157,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            tv.append(result + "\n");
         }
 
-        @Override
-        protected void onCancelled() {
-            super.onCancelled();
-        }
-
-        @Override
-        protected void onCancelled(Void aVoid) {
-            super.onCancelled(aVoid);
-        }
     }
 }
