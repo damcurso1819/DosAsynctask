@@ -134,23 +134,22 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 }
                 if(isCancelled()) {
-                    return "cancelado, tiempo: "+ (System.nanoTime() - initial);
+                    break;
                 }
                 publishProgress(cuentaAtras);
             }
-            return "Tiempo: " + (System.nanoTime() - initial);
+            return "tiempo: " + (System.nanoTime() - initial);
         }
 
         @Override
         protected void onCancelled(String s) {
             super.onCancelled(s);
-            tv.append(s + "\n");
+            tv.append("cancelado: " + s + "\n");
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
             super.onProgressUpdate(values);
-            Log.v(TAG, Thread.currentThread().getName());
             for(Integer i: values) {
                 tv.append(i + "\n");
             }
